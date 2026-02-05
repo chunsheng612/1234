@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>方方老師釜山之旅 (終極美食版)</title>
+    
+    <!-- 核心庫 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* 字型與基礎設定 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background-color: #fdfbf7; 
+            background-image: url('https://github.com/chunsheng612/FunFun.AI-Website/blob/main/ai-tools-bg-light.png?raw=true');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            -webkit-tap-highlight-color: transparent;
+            color: #4a4a4a;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        padding-bottom: env(safe-area-inset-bottom);
+
+        /* --- MacOS 26 / 液態玻璃特效 --- */
+
+        .glass-panel {
+            background: rgba(255, 255, 250, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .liquid-btn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.05), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .liquid-btn:active {
+            transform: scale(0.96);
+        }
+
+        .liquid-btn-primary {
+            background: rgba(70, 60, 50, 0.85);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        .liquid-btn-primary:active {
+            background: rgba(70, 60, 50, 0.95);
+        }
+
+        .tab-btn { transition: all 0.3s ease; }
+        .tab-btn-active {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(200, 180, 160, 0.2);
+            color: #5d4037;
+            transform: translateY(-2px);
+        }
+        .tab-btn-inactive {
+            background: rgba(255, 255, 255, 0.3);
+            color: #8d8d8d;
+            border: 1px solid transparent;
+        }
+
+        .timeline-line { border-left: 2px dashed rgba(200, 180, 160, 0.4); }
+        
+        /* 宵夜區塊動畫 */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-down { animation: slideDown 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 內建圖示組件 ---
+        const Icons = {
+            MapPin: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Car: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M2 12h12"/></svg>,
+            Utensils: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+            Coffee: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>,
+            Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="6 6 18 18"/></svg>,
+            Plane: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"/><path d="M13 5v7"/><path d="M6 12V2L3 5"/><path d="M16 12v10l3-3"/></svg>,
+            Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            Shopping: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+            Flag: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>,
+            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            Beer: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M9 12v6"/><path d="M13 12v6"/><path d="M14 7.5c-1.7 0-4.5 0-6.5 2.5"/><path d="M10 22h8a2 2 0 0 0 2-2V7.5a2.5 2.5 0 0 0-4-2H5.5a2.5 2.5 0 0 0-3.5 2.22c.28 1.48 1.4 6.8 2 10.28a2 2 0 0 0 2 2Z"/></svg>
+        };
+
+        const tripData = {
+            meta: {
+                title: "方方老師釜山之旅 (終極美食版)",
+                dates: "2026/02/06 - 02/09",
+                travelers: "Tsai Chiayun, Chang Chunsheng",
+                hotel: {
+                    name: "Busan Cotice the Bridge",
+                    nameKR: "코티스 더 브릿지",
+                    address: "釜山廣域市 中區 札嘎其海岸路 52",
+                    addressKR: "부산 중구 자갈치해안로 52",
+                    note: "Check-in: 15:00 / Check-out: 11:00"
+                }
+            },
+            days: [
+                {
+                    id: 1,
+                    date: "2/6 (五)",
+                    title: "紅眼抵達 & 南浦漫遊",
+                    items: [
+                        { time: "06:05", type: "transport", title: "抵達金海機場 (PUS)", desc: "出關領行李，準備搭車。", icon: "Plane" },
+                        { time: "07:00", type: "transport", title: "計程車 ⮕ 飯店放行李", desc: "這時間還不能進房，先寄放行李去吃早餐。", taxi: "約 18,000 韓元", dest: "Cotice the Bridge (코티스 더 브릿지)", addressKR: "부산 중구 자갈치해안로 52" },
+                        { time: "08:00", type: "food", title: "早餐：首爾蘿蔔塊 (Seoul Kkakdugi)", desc: "南浦洞24小時老店。必點雪濃湯，蒜味泡菜超開胃！", addressKR: "부산 중구 구덕로34번길 10" },
+                        { time: "09:30", type: "relax", title: "Spa Land 汗蒸幕 補眠", desc: "五星級汗蒸幕。先洗澡泡湯，然後在休息區大睡一場，這對紅眼班機很重要。", taxi: "搭車約 16,000 韓元", addressKR: "부산 해운대구 센텀남대로 35 신세계백화점 센텀시티점" },
+                        { time: "14:00", type: "transport", title: "回飯店 Check-in", desc: "精神飽滿回到南浦洞，辦理入住。", taxi: "約 16,000 韓元" },
+                        { time: "16:00", type: "activity", title: "飯店周邊 / 樂天汽車百貨", desc: "逛逛對面樂天百貨(光復店)。推薦去頂樓看風景，或去B1超市買草莓。", addressKR: "부산 중구 중앙대로 2" },
+                        { 
+                            time: "18:00", type: "food", title: "晚餐：札嘎其烤盲鰻", desc: "【體驗】梨花洞烤盲鰻。蒜頭辣醬爆炒，充滿煙火氣。", addressKR: "부산 서구 자갈치해안로 52",
+                            local_choice: { name: "城一家 (성일집)", addressKR: "부산 중구 대교로 103", desc: "70年老店，堅持使用國產盲鰻，米其林推薦，就在樂天百貨旁。" }
+                        },
+                        { 
+                            time: "20:00", type: "shopping", title: "BIFF廣場 & 富平夜市", desc: "推薦：BIFF『黑糖堅果糖餅』、富平市場『李家辣炒年糕』(蘿蔔絲湯頭) & 『巨人炸雞』(量大酥脆)。", addressKR: "부산 중구 부평1길 48",
+                            note: "必吃糖餅/年糕"
+                        }
+                    ],
+                    snacks: [
+                        { tag: "遠", time: "15分", name: "富平罐頭夜市 - 炸豬排骨 (Kkangdwaehu)", desc: "必點半半口味，外皮酥脆肉質軟嫩，超強下酒菜。", addressKR: "부산 중구 부평1길 57" },
+                        { tag: "中", time: "8分", name: "BIFF廣場 布帳馬車街", desc: "紅色塑膠棚下的浪漫。推薦點炒軟骨、雞蛋捲。", addressKR: "부산 중구 비프광장로" },
+                        { tag: "近", time: "3分", name: "海田烤腸 (Haejeon Gopchang)", desc: "就在飯店後方。必點『起司烤腸』，邪惡又美味。", addressKR: "부산 중구 광복로6번길 14" }
+                    ]
+                },
+                {
+                    id: 2,
+                    date: "2/7 (六)",
+                    title: "斜坡滑車 & 韓牛大餐",
+                    items: [
+                        { time: "09:00", type: "transport", title: "出發：前往斜坡滑車", desc: "這趟路程較遠，搭計程車最舒服，直接去機張。", taxi: "約 25,000 韓元 (40分鐘)", dest: "Skyline Luge Busan", addressKR: "부산 기장군 기장읍 시랑리 산60-1" },
+                        { time: "10:00", type: "activity", title: "Skyline Luge 斜坡滑車", desc: "建議玩 2-3 回券。搭纜車上去，滑車下來，非常好玩！", note: "現場或Klook購票", icon: "Flag" },
+                        { time: "11:30", type: "transport", title: "計程車 ⮕ 海雲台", desc: "玩完直接殺去海雲台吃午餐。", taxi: "約 12,000 韓元 (20分鐘)" },
+                        { 
+                            time: "12:00", type: "food", title: "午餐：海雲台 傳說中的韓牛", desc: "【名店】記得點「調味排骨」與馬鈴薯麵。若排隊太長請看備案。", addressKR: "부산 해운대구 중동2로10번길 32-10",
+                            local_choice: { name: "那家韓牛 (그집한우)", addressKR: "부산 해운대구 중동2로10번길 14", desc: "在地人聚餐名店，不用排隊排到崩潰，肉質一樣A++頂級。" }
+                        },
+                        { time: "14:00", type: "activity", title: "膠囊列車 (Blue Line Park)", desc: "路線：尾浦(Mipo) -> 青沙浦。享受絕美海景。", note: "⚠️ 需提前預約時段", addressKR: "부산 해운대구 달맞이길62번길 13 (미포정거장)" },
+                        { time: "15:30", type: "coffee", title: "青沙浦海景 / 甜點時光", desc: "推薦：海雲台 OPS麵包店 (巨大泡芙)、Millac the Market (蜂巢冰淇淋) 或青沙浦 H.US Coffee。", addressKR: "부산 해운대구 청사포로 135" },
+                        { time: "18:00", type: "transport", title: "移動至廣安里", taxi: "約 8,000 韓元", addressKR: "부산 수영구 광안해변로 219" },
+                        { time: "19:00", type: "activity", title: "廣安里 無人機燈光秀", desc: "週六限定！站在沙灘上看表演 (冬季通常 19:00 & 21:00)。" },
+                        { 
+                            time: "20:00", type: "food", title: "晚餐：味贊王鹽烤肉", desc: "厚切豬五花，專人代烤，搭配老泡菜與蝦醬，重口味最愛。", addressKR: "부산 수영구 광안해변로 277번길 3",
+                            local_choice: { name: "Tonshou (톤쇼우)", addressKR: "부산 수영구 광안해변로279번길 13", desc: "釜山最難排隊的炸豬排店！粉紅色肉質，如果不想吃烤肉可以挑戰這家。" }
+                        }
+                    ],
+                    snacks: [
+                        { tag: "遠", time: "10分", name: "BHC / 橋村炸雞 (南浦店)", desc: "海雲台回來太累不想出門？去富平洞外帶起司粉炸雞或蜂蜜炸雞。", addressKR: "부산 중구 광복로 16" },
+                        { tag: "中", time: "5分", name: "香港飯店0410 / 雪濃湯", desc: "外帶一份糖醋肉(21:00前)；太晚就喝雪濃湯(24hr)。", addressKR: "부산 중구 남포길 48" },
+                        { tag: "近", time: "1分", name: "飯店樓下 CU / GS25", desc: "不想動？「蟹膏醬+微波飯」或「Mark定食(泡麵+起司+熱狗)」。", addressKR: "" }
+                    ]
+                },
+                {
+                    id: 3,
+                    date: "2/8 (日)",
+                    title: "彩色山城 & 嗆辣豬腳",
+                    items: [
+                        { time: "10:00", type: "activity", title: "甘川洞文化村", desc: "睡飽再出發。色彩繽紛的山城，適合拍照。", taxi: "約 5,000 韓元", addressKR: "부산 사하구 감내2로 203" },
+                        { 
+                            time: "13:00", type: "food", title: "午餐：南浦洞 冷菜豬腳", desc: "特色是冷盤+芥末醬，清爽開胃。推薦「釜山豬腳」。", addressKR: "부산 중구 광복로 13-1",
+                            local_choice: { name: "洪所豬腳 (홍소족발)", addressKR: "부산 중구 광복로 21-2", desc: "如果不愛吃冷的，這家是『熱』的豬腳，口感軟嫩Q彈，在地人更愛。" }
+                        },
+                        { time: "15:00", type: "shopping", title: "南浦洞商圈 / 國際市場", desc: "逛逛國際市場的雜貨。推薦體驗路邊攤的「拌冬粉」(Bibim Dangmyeon)。", addressKR: "부산 중구 비프광장로" },
+                        { 
+                            time: "18:00", type: "food", title: "晚餐：螞蟻家 (辣炒章魚)", desc: "章魚+牛腸+蝦子 (Nac-Gop-Sae)。重口味辣拌飯。", addressKR: "부산 중구 광복로 32",
+                            local_choice: { name: "李在模披薩 (이재모피자)", addressKR: "부산 중구 광복중앙로 31", desc: "釜山傳奇！起司像瀑布一樣多，不想再吃韓式辣醬時的完美救贖。" }
+                        },
+                        { time: "20:00", type: "relax", title: "樂天頂樓夜景 / 飯店休息", desc: "累了就回飯店，不累可以去樂天百貨頂樓看夜景(免費)。", addressKR: "부산 중구 중앙대로 2" }
+                    ],
+                    snacks: [
+                        { tag: "遠", time: "10分", name: "李家辣炒年糕 (Igane)", desc: "如果白天沒吃到，最後一晚一定要補齊。蘿蔔絲醬汁一絕。", addressKR: "부산 중구 부평1길 48" },
+                        { tag: "中", time: "5分", name: "OPS麵包店 / 樂天超市", desc: "去買明天早餐或最後掃貨泡麵零食。", addressKR: "부산 중구 중앙대로 2" },
+                        { tag: "近", time: "2分", name: "密陽血腸豬肉湯飯 (24hr)", desc: "最後一晚，再來一碗道地的釜山豬肉湯飯，畫下句點。", addressKR: "부산 중구 광복로 6" }
+                    ]
+                },
+                {
+                    id: 4,
+                    date: "2/9 (一)",
+                    title: "影島海景 & 優雅返程",
+                    items: [
+                        { time: "11:00", type: "transport", title: "退房 (行李寄放)", desc: "11點前退房，行李留飯店，輕裝出發去影島。", icon: "Home" },
+                        { time: "11:30", type: "transport", title: "前往影島 白淺灘文化村", desc: "沿著海岸懸崖的小村落，景色優美。有很多海景咖啡廳。", taxi: "約 8,000 韓元", addressKR: "부산 영도구 영선동4가 605-3" },
+                        { time: "12:00", type: "coffee", title: "海景咖啡放空", desc: "推薦 Aether、Having Moment 或 Momo Coffee (世界冠軍咖啡)。", addressKR: "부산 영도구 절영로 234" },
+                        { 
+                            time: "14:00", type: "food", title: "午餐：海鮮拉麵 / 海女村", desc: "白淺灘有很多海景拉麵店。或去影島海女村坐在海邊吃海鮮盤。", 
+                            local_choice: { name: "白淺灘店舖 (흰여울점빵)", addressKR: "부산 영도구 절영로 222", desc: "坐在懸崖邊吃泡麵，無敵海景，CP值爆表。" }
+                        },
+                        { time: "16:00", type: "shopping", title: "最後補貨 & 伴手禮", desc: "推薦買：三進魚板(可樂餅)、Busan Sand (奶油餅乾)、Olive Young 美妝。", addressKR: "부산 중구 남포동" },
+                        { time: "17:30", type: "food", title: "晚餐：南浦蔘雞湯", desc: "回國前的補身。有人蔘酒，也可自己加蒜頭。", addressKR: "부산 중구 구덕로34번길 16" },
+                        { time: "18:30", type: "transport", title: "前往機場", desc: "回飯店拿行李，門口叫車直奔機場。", taxi: "約 20,000 韓元 (預留50分鐘)", dest: "金海國際機場", addressKR: "김해국제공항 국제선 청사" },
+                        { time: "21:50", type: "transport", title: "飛機起飛 (LJ751)", desc: "再見釜山！", icon: "Plane" }
+                    ]
+                }
+            ],
+            saltySnacks: [
+                { name: "炸豬排骨 (Kkangdwaehu)", addressKR: "부산 중구 부평1길 57", desc: "必點半半口味，像炸雞一樣酥脆的排骨肉" },
+                { name: "奶奶油豆腐包 (Halmae Yubu)", addressKR: "부산 중구 부평3길 29", desc: "巷弄內必吃，豆皮包冬粉配熱高湯" },
+                { name: "石磨綠豆煎餅 (Mattdol)", addressKR: "부산 중구 부평2길 27", desc: "現磨綠豆煎得金黃酥脆，配洋蔥醬油" },
+                { name: "火炙韓牛壽司 (夜市攤車)", addressKR: "부평깡통야시장 내", desc: "夜市主街排隊名攤，噴槍現烤視覺滿分" },
+                { name: "南浦麵疙瘩 (Nampo Sujebi)", addressKR: "부산 중구 남포길 16-1", desc: "30年老店，薄透麵皮+小魚乾清湯" }
+            ]
+        };
+
+        const AddressModal = ({ isOpen, onClose, content }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background: 'rgba(50, 40, 30, 0.4)', backdropFilter: 'blur(8px)'}} onClick={onClose}>
+                    <div className="glass-panel rounded-3xl p-6 w-full max-w-sm text-center space-y-4 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <div className="flex justify-between items-center relative z-10 pb-2 border-b border-gray-300/30">
+                            <h3 className="font-bold text-gray-500 text-sm tracking-widest">SHOW TO DRIVER</h3>
+                            <button onClick={onClose} className="p-2 bg-black/5 rounded-full"><Icons.X /></button>
+                        </div>
+                        <div className="py-6 relative z-10">
+                            <p className="text-3xl font-black text-gray-800 leading-tight break-keep" style={{textShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>{content.addressKR}</p>
+                            <p className="text-gray-500 mt-4 text-sm font-medium">{content.dest || content.title}</p>
+                        </div>
+                        <button className="w-full liquid-btn liquid-btn-primary py-4 rounded-2xl font-bold text-lg relative z-10" onClick={onClose}>關閉</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const LateNightSection = ({ snacks, openModal }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            if (!snacks) return null;
+
+            return (
+                <div className="mt-8 mb-4">
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="w-full flex items-center justify-between p-4 bg-indigo-900/90 text-white rounded-2xl shadow-lg backdrop-blur-sm active:scale-[0.98] transition-transform"
+                    >
+                        <div className="flex items-center gap-2 font-bold">
+                            <Icons.Beer />
+                            <span>肚子餓了嗎？查看推薦宵夜</span>
+                        </div>
+                        <span className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+                    </button>
+
+                    {isOpen && (
+                        <div className="mt-3 space-y-2 animate-slide-down">
+                            {snacks.map((snack, idx) => (
+                                <div key={idx} className="glass-panel p-3 rounded-xl flex items-center gap-3 border-l-4 border-indigo-500">
+                                    <div className="flex flex-col items-center justify-center w-12 h-12 bg-indigo-50 rounded-lg shrink-0">
+                                        <span className="text-xs font-bold text-indigo-800">{snack.tag}</span>
+                                        <span className="text-[10px] text-gray-500">{snack.time}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-gray-800 text-sm">{snack.name}</h4>
+                                        <p className="text-xs text-gray-500 leading-tight">{snack.desc}</p>
+                                    </div>
+                                    {snack.addressKR && (
+                                        <button 
+                                            onClick={() => openModal({addressKR: snack.addressKR, title: snack.name})}
+                                            className="p-2 bg-white rounded-full shadow-sm text-indigo-600"
+                                        >
+                                            <Icons.MapPin />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const TimelineItem = ({ item, openModal }) => {
+            const getIcon = (type, customIcon) => {
+                if (customIcon === "Plane") return <Icons.Plane />;
+                if (customIcon === "Home") return <Icons.Home />;
+                if (customIcon === "Flag") return <Icons.Flag />;
+                switch (type) {
+                    case 'food': return <Icons.Utensils />;
+                    case 'transport': return <Icons.Car />;
+                    case 'relax': return <Icons.Moon />;
+                    case 'coffee': return <Icons.Coffee />;
+                    case 'shopping': return <Icons.Shopping />;
+                    default: return <Icons.MapPin />;
+                }
+            };
+            
+            const getIconColor = (type) => {
+                switch (type) {
+                    case 'food': return 'text-orange-600 bg-orange-100/50';
+                    case 'transport': return 'text-blue-600 bg-blue-100/50';
+                    case 'relax': return 'text-purple-600 bg-purple-100/50';
+                    case 'coffee': return 'text-amber-700 bg-amber-100/50';
+                    case 'shopping': return 'text-pink-600 bg-pink-100/50';
+                    default: return 'text-emerald-600 bg-emerald-100/50';
+                }
+            };
+
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.addressKR || item.title)}`;
+
+            return (
+                <div className="relative pl-8 pb-8 timeline-line last:border-0 last:pb-0">
+                    <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-[#fdfbf7] border-4 border-[#dcdcdc] shadow-sm"></div>
+                    <div className="flex items-center text-gray-400 text-sm font-bold mb-2 tracking-wide">
+                        <Icons.Clock /> <span className="ml-1">{item.time}</span>
+                    </div>
+                    <div className="glass-panel rounded-2xl p-5 hover:scale-[1.01] transition-transform duration-300">
+                        <div className="flex items-start gap-3 mb-3">
+                            <div className={`mt-1 p-3 rounded-xl shrink-0 ${getIconColor(item.type)} backdrop-blur-sm shadow-inner`}>
+                                {getIcon(item.type, item.icon)}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.title}</h3>
+                                {item.note && <span className="inline-block bg-red-50/80 border border-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full mt-1 font-bold tracking-wide shadow-sm">{item.note}</span>}
+                            </div>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-4 leading-relaxed font-medium">{item.desc}</p>
+                        {item.taxi && (
+                            <div className="flex items-center gap-2 bg-yellow-50/60 border border-yellow-100/50 text-yellow-800 text-xs px-3 py-2 rounded-xl mb-4 shadow-sm backdrop-blur-sm">
+                                <span className="shrink-0 opacity-70"><Icons.Car /></span>
+                                <span className="font-semibold">預估車資：{item.taxi}</span>
+                            </div>
+                        )}
+                        
+                        {/* 在地人推薦區塊 (Local Choice) */}
+                        {item.local_choice && (
+                            <div className="mb-4 bg-amber-50/80 border border-amber-200/60 rounded-xl p-3 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200/40 rounded-full -mr-2 -mt-2"></div>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <span className="text-amber-500"><Icons.Star /></span>
+                                    <span className="text-xs font-black text-amber-700 tracking-wider uppercase">在地人吃這家</span>
+                                </div>
+                                <p className="font-bold text-gray-800 text-sm">{item.local_choice.name}</p>
+                                <p className="text-xs text-gray-600 mt-1 leading-relaxed">{item.local_choice.desc}</p>
+                                <div className="flex gap-2 mt-2">
+                                    <button 
+                                        onClick={() => openModal({addressKR: item.local_choice.addressKR, title: item.local_choice.name})} 
+                                        className="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-amber-700 shadow-sm border border-amber-100">
+                                        給司機看
+                                    </button>
+                                     <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.local_choice.addressKR)}`} 
+                                        target="_blank" rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-gray-500 shadow-sm border border-gray-100">
+                                        導航
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 mt-2">
+                            {item.addressKR && (
+                                <button onClick={() => openModal(item)} className="flex-1 flex items-center justify-center gap-1.5 liquid-btn liquid-btn-primary text-sm py-3 rounded-xl">
+                                    <span className="font-bold">給司機看</span>
+                                </button>
+                            )}
+                            <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 liquid-btn text-gray-700 text-sm py-3 rounded-xl hover:bg-white/40">
+                                <span className="opacity-70"><Icons.MapPin /></span>
+                                <span className="font-bold">導航</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState(1);
+            const [modalOpen, setModalOpen] = useState(false);
+            const [modalContent, setModalContent] = useState({});
+            const [copied, setCopied] = useState(false);
+
+            const handleOpenModal = (item) => { setModalContent(item); setModalOpen(true); };
+            const copyHotelAddress = () => {
+                navigator.clipboard.writeText(tripData.meta.hotel.addressKR);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+            const activeDay = tripData.days.find(d => d.id === activeTab);
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen shadow-2xl overflow-hidden flex flex-col pb-safe">
+                    <header className="pt-8 pb-12 px-6 rounded-b-[3rem] z-10 relative overflow-hidden glass-panel border-t-0 border-l-0 border-r-0">
+                        <div className="relative z-10">
+                            <h1 className="text-2xl font-black mb-1 text-gray-800 tracking-tight" style={{textShadow: '0 2px 10px rgba(255,255,255,0.8)'}}>{tripData.meta.title}</h1>
+                            <p className="opacity-60 text-sm mb-5 flex items-center gap-1 font-medium text-gray-600"><span className="w-3 h-3 inline-block"><Icons.Clock /></span> {tripData.meta.dates}</p>
+                            <div className="bg-white/40 backdrop-blur-md rounded-2xl p-4 border border-white/60 shadow-lg">
+                                <div className="flex items-start gap-3">
+                                    <span className="w-5 h-5 mt-1 opacity-60 text-gray-700"><Icons.Home /></span>
+                                    <div className="flex-1 text-gray-800">
+                                        <p className="font-bold text-sm">住宿：{tripData.meta.hotel.name}</p>
+                                        <p className="text-xs opacity-60 mt-0.5 font-medium">{tripData.meta.hotel.nameKR}</p>
+                                    </div>
+                                    <button onClick={copyHotelAddress} className="p-2 bg-white/50 rounded-lg active:bg-white/80 text-gray-600 shadow-sm border border-white">
+                                        {copied ? <span className="text-xs font-bold">OK</span> : <Icons.Copy />}
+                                    </button>
+                                </div>
+                                <button onClick={() => handleOpenModal({addressKR: tripData.meta.hotel.addressKR, title: "請帶我去這間飯店"})} className="w-full mt-3 liquid-btn text-blue-600 text-xs font-bold py-2.5 rounded-xl">顯示飯店地址給司機</button>
+                            </div>
+                        </div>
+                    </header>
+                    <div className="px-4 mt-[-25px] z-20 overflow-x-auto hide-scrollbar py-2">
+                        <div className="flex gap-3 px-1">
+                            {tripData.days.map(day => (
+                                <button key={day.id} onClick={() => setActiveTab(day.id)} className={`tab-btn flex-shrink-0 px-5 py-3 rounded-2xl font-bold text-sm whitespace-nowrap ${activeTab === day.id ? 'tab-btn-active' : 'tab-btn-inactive'}`}>{day.date}</button>
+                            ))}
+                        </div>
+                    </div>
+                    <main className="flex-1 p-6">
+                        <div className="mb-6 pl-2">
+                            <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{activeDay.title}</h2>
+                            <p className="text-gray-400 text-xs font-bold tracking-wider uppercase mt-1">Daily Plan</p>
+                        </div>
+                        <div className="space-y-4">
+                            {activeDay.items.map((item, index) => <TimelineItem key={index} item={item} openModal={handleOpenModal} />)}
+                        </div>
+                        
+                        {/* 宵夜區塊 */}
+                        <LateNightSection snacks={activeDay.snacks} openModal={handleOpenModal} />
+
+                        <div className="mt-8 glass-panel border border-yellow-200/50 bg-yellow-50/30 rounded-2xl p-5 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-200/20 rounded-full blur-2xl translate-x-8 -translate-y-8"></div>
+                            <div className="flex items-center gap-2 mb-3 text-yellow-700 font-bold relative z-10"><span className="w-5 h-5"><Icons.Info /></span> 方方老師的小筆記</div>
+                            <ul className="list-disc list-inside text-sm text-yellow-800/80 space-y-1.5 ml-1 font-medium relative z-10">
+                                {activeTab === 1 && <li>Spa Land 補眠是維持體力的關鍵，不要硬撐。</li>}
+                                {activeTab === 2 && <li>斜坡滑車在東釜山，一早去最不塞車。韓牛店記得點調味排骨。</li>}
+                                {activeTab === 3 && <li>豬腳是冷盤芥末口味。今天就在飯店附近逛，很悠閒。</li>}
+                                {activeTab === 4 && <li>不用買 Busan Pass，單買票券時間比較自由，可以睡飽再出門。</li>}
+                            </ul>
+                            
+                            <div className="mt-4 pt-4 border-t border-yellow-200/50">
+                                <h4 className="text-xs font-black text-yellow-800 uppercase tracking-widest mb-2">🔥 論壇必吃鹹食清單 (點擊看地址)</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {tripData.saltySnacks.map((s, i) => (
+                                        <div key={i} className="bg-white/50 p-3 rounded-lg flex flex-col gap-1 cursor-pointer hover:bg-white/80 transition-colors shadow-sm" onClick={() => handleOpenModal({addressKR: s.addressKR, title: s.name})}>
+                                            <div className="flex justify-between items-start">
+                                                <p className="text-xs font-bold text-gray-800">{s.name}</p>
+                                                <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full shrink-0">地圖</span>
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 leading-tight">{s.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                    <footer className="glass-panel border-b-0 border-l-0 border-r-0 mt-4 p-8 text-center text-[10px] text-gray-400 font-medium tracking-widest uppercase">Made for Fang Fang Teacher & Ms. Tsai</footer>
+                    <AddressModal isOpen={modalOpen} onClose={() => setModalOpen(false)} content={modalContent} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
